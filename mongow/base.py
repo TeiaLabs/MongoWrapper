@@ -7,16 +7,55 @@ from typing import (
     TypeVar
 )
 
+import pydantic
 from bson.objectid import ObjectId
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .instance import database
 
 T = TypeVar("T", bound=BaseModel)
 
 
-class BaseMixin:
+from bson import ObjectId
+
+
+class PyObjectId(ObjectId):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if not ObjectId.is_valid(v):
+            raise ValueError("Invalid objectid")
+        return ObjectId(v)
+
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        field_schema.update(type="string")
+        
+
+class AllOptional(pydantic.main.ModelMetaclass, type):
+    def __new__(cls, name, bases, namespaces, **kwargs):
+        annotations = namespaces.get('__annotations__', {})
+        for base in bases:
+            annotations.update(base.__annotations__)
+        for field in annotations:
+            if not field.startswith('__'):
+                annotations[field] = Optional[annotations[field]]
+        namespaces['__annotations__'] = annotations
+        return super().__new__(cls, name, bases, namespaces, **kwargs)
+
+
+
+class BaseMixin(BaseModel, metaclass=AllOptional):
     __collection__ = "base"
+
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {PyObjectId: str}
 
     @classmethod
     async def create(cls, data: T) -> ObjectId:
@@ -45,15 +84,18 @@ class BaseMixin:
         if order is not None:
             cursor = cursor.sort(order[0], 1 if order[1] else -1)
 
-        return await cursor.skip(offset).limit(limit)
+        return await cursor.skip(offset).to_list(length=offset+limit)
 
     @classmethod
-    async def update(cls, filters: Dict[str, Any], data: T) -> int:
-        dict_data = data.dict(exclude_unset=True, by_alias=True)
-        dict_data = {key: val for key, val in dict_data.items() if key not in filters}
+    async def update(cls, filters: Dict[str, Any], data: T | dict, operator: str) -> int:
+        if isinstance(data, dict):
+            dict_data = data
+        else:
+            dict_data = data.dict(exclude_unset=True, by_alias=True)
+            dict_data = {key: val for key, val in dict_data.items() if key not in filters}
         result = await database.database[cls.__collection__].update_one(
             filters,
-            {"$set": dict_data}
+            {operator: dict_data}
         )
 
         return result.modified_count
@@ -71,9 +113,9 @@ class BaseMixin:
         return result.modified_count
 
     @classmethod
-    async def delete(cls, filters: Dict[str: Any]) -> int:
-        result = await database.database[cls.__collection__].delete_one(
-            filters
+    async def delete(cls, filters: Dict[str, Any]) -> int:
+        result = await database.database[cls.__collection__].delete_many(
+            filter=filters
         )
         return result.deleted_count
 

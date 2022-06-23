@@ -6,7 +6,10 @@ from .instance import (
     AsyncIOMotorClient
 )
 
-from .base import BaseMixin
+from .base import (
+    BaseMixin,
+    PyObjectId
+)
 
 
 def init_database(
