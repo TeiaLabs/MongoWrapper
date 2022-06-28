@@ -18,9 +18,6 @@ from .instance import database
 T = TypeVar("T", bound=BaseModel)
 
 
-from bson import ObjectId
-
-
 class PyObjectId(ObjectId):
     @classmethod
     def __get_validators__(cls):
@@ -41,13 +38,12 @@ class AllOptional(pydantic.main.ModelMetaclass, type):
     def __new__(cls, name, bases, namespaces, **kwargs):
         annotations = namespaces.get('__annotations__', {})
         for base in bases:
-            annotations.update(base.__annotations__)
+            annotations.update(getattr(base, "__annotations__", {}))
         for field in annotations:
             if not field.startswith('__'):
                 annotations[field] = Optional[annotations[field]]
         namespaces['__annotations__'] = annotations
         return super().__new__(cls, name, bases, namespaces, **kwargs)
-
 
 
 class BaseMixin(BaseModel, metaclass=AllOptional):
