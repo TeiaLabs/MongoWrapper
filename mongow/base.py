@@ -55,7 +55,7 @@ class BaseMixin(BaseModel, Generic[T], metaclass=AllOptional):
 
     class Config:
         arbitrary_types_allowed = True
-        json_encoders = {PyObjectId: str}
+        json_encoders = {PyObjectId: str, ObjectId: str}
 
     @classmethod
     async def create(cls, data: T) -> ObjectId:
