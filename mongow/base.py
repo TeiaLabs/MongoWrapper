@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import (
     Any,
     Dict,
@@ -9,6 +7,7 @@ from typing import (
     Optional,
     Tuple,
     TypeVar,
+    Union,
 )
 
 import pydantic
@@ -43,7 +42,7 @@ class AllOptional(pydantic.main.ModelMetaclass, type):
             annotations.update(getattr(base, "__annotations__", {}))
         for field in annotations:
             if not field.startswith("__"):
-                annotations[field] = Optional[annotations[field]]
+                annotations[field] = Optional[annotations[field]]  # type: ignore
         namespaces["__annotations__"] = annotations
         return super().__new__(cls, name, bases, namespaces, **kwargs)
 
@@ -84,7 +83,7 @@ class BaseMixin(BaseModel, Generic[T], metaclass=AllOptional):
 
     @classmethod
     async def update(
-        cls, filters: Dict[str, Any], data: T | dict, operator: str
+        cls, filters: Dict[str, Any], data: Union[T, dict], operator: str
     ) -> int:
         if isinstance(data, dict):
             dict_data = data
