@@ -8,7 +8,8 @@ from .instance import (
 
 from .base import (
     BaseMixin,
-    PyObjectId
+    PyObjectId,
+    AllOptional
 )
 
 
