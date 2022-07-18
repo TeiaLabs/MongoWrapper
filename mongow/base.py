@@ -15,6 +15,7 @@ from bson.objectid import ObjectId
 from pydantic import BaseModel, Field
 
 from .instance import database
+from .mixins.index import IndexCreationMixin
 
 T = TypeVar("T", bound="BaseMixin")
 
@@ -47,7 +48,7 @@ class AllOptional(pydantic.main.ModelMetaclass, type):
         return super().__new__(cls, name, bases, namespaces, **kwargs)
 
 
-class BaseMixin(BaseModel, Generic[T], metaclass=AllOptional):
+class BaseMixin(BaseModel, IndexCreationMixin, Generic[T], metaclass=AllOptional):
     __collection__ = "base"
 
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
