@@ -15,7 +15,7 @@ from bson.objectid import ObjectId
 from pydantic import BaseModel, Field
 
 from .instance import database
-from .mixins.index import IndexCreationMixin
+from .mixins import IndexCreationMixin
 
 T = TypeVar("T", bound="BaseMixin")
 
@@ -48,7 +48,12 @@ class AllOptional(pydantic.main.ModelMetaclass, type):
         return super().__new__(cls, name, bases, namespaces, **kwargs)
 
 
-class BaseMixin(BaseModel, IndexCreationMixin, Generic[T], metaclass=AllOptional):
+class BaseMixin(
+    BaseModel,
+    IndexCreationMixin,
+    Generic[T],
+    metaclass=AllOptional,
+):
     __collection__ = "base"
 
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
@@ -56,6 +61,12 @@ class BaseMixin(BaseModel, IndexCreationMixin, Generic[T], metaclass=AllOptional
     class Config:
         arbitrary_types_allowed = True
         json_encoders = {PyObjectId: str, ObjectId: str}
+
+    @classmethod
+    async def count(cls, filters: Optional[dict[str, Any]] = None) -> int:
+        col = database.database[cls.__collection__]
+        c = await col.count_documents(filters if filter else {})
+        return c
 
     @classmethod
     async def create(cls, data: T) -> ObjectId:
