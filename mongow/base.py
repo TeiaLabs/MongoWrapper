@@ -61,6 +61,7 @@ class BaseMixin(
     class Config:
         arbitrary_types_allowed = True
         json_encoders = {PyObjectId: str, ObjectId: str}
+        use_enum_values = True
 
     @classmethod
     async def count(cls, filters: Optional[dict[str, Any]] = None) -> int:
@@ -91,11 +92,12 @@ class BaseMixin(
         )
         if order is not None:
             cursor = cursor.sort(order[0], 1 if order[1] else -1)
-        return await cursor.skip(offset).to_list(length=offset + limit)
+        objs = await cursor.skip(offset).to_list(length=offset + limit)
+        return objs
 
     @classmethod
     async def update(
-        cls, filters: Dict[str, Any], data: Union[T, dict], operator: str
+        cls, filters: Dict[str, Any], data: Union[T, dict], operator: str = "$set"
     ) -> int:
         if isinstance(data, dict):
             dict_data = data
