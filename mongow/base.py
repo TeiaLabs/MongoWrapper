@@ -12,7 +12,7 @@ from typing import (
 
 import pydantic
 from bson.objectid import ObjectId
-from pydantic import BaseModel, Field
+from pydantic import BaseConfig, BaseModel, Field
 
 from .instance import database
 from .mixins import CountDocumentsMixin, IndexCreationMixin
@@ -48,6 +48,12 @@ class AllOptional(pydantic.main.ModelMetaclass, type):
         return super().__new__(cls, name, bases, namespaces, **kwargs)
 
 
+BaseConfig.json_encoders = {
+    PyObjectId: str,
+    ObjectId: str,
+}
+
+
 class BaseMixin(
     BaseModel,
     CountDocumentsMixin,
@@ -61,9 +67,10 @@ class BaseMixin(
 
     class Config:
         arbitrary_types_allowed = True
-        json_encoders = {PyObjectId: str, ObjectId: str}
         use_enum_values = True
-
+        fields = {
+            "id": {"alias": "_id", "default_factory": PyObjectId}
+        }
 
     @classmethod
     async def create(cls, data: T) -> ObjectId:
