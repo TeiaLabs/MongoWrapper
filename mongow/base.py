@@ -20,6 +20,7 @@ from .instance import database
 from .mixins import CountDocumentsMixin, IndexCreationMixin
 
 T = TypeVar("T", bound="BaseMixin")
+ObjOrDict = Union[T, dict[str, Any]]
 
 
 class PyObjectId(ObjectId):
@@ -93,6 +94,13 @@ class BaseMixin(
         return key, value
 
     @classmethod
+    async def batch_create(cls, data: List[T]) -> List[ObjectId]:
+        result = await database.database[cls.__collection__].insert_many(
+            [obj.dict(by_alias=True) for obj in data]
+        )
+        return result.inserted_ids
+
+    @classmethod
     async def read(
         cls,
         fields: Iterable[str] = tuple(),
@@ -130,11 +138,34 @@ class BaseMixin(
         return result.modified_count
 
     @classmethod
-    async def upsert(cls, filters: Dict[str, Any], data: T) -> int:
-        dict_data = data.dict(exclude_unset=True, by_alias=True)
+    async def batch_update(
+        cls, data: ObjOrDict, filters: ObjOrDict, operator: str = "$set",
+    ) -> int:
+        if not isinstance(filters, dict):
+            filters = filters.dict(exclude_unset=True, by_alias=True)
+        if isinstance(data, dict):
+            dict_data = data
+        else:
+            dict_data = data.dict(exclude_unset=True, by_alias=True)
+        dict_data = {
+            key: val for key, val in dict_data.items() if key not in filters
+        }
+        result = await database.database[cls.__collection__].update_many(
+            filters, {operator: dict_data}
+        )
+        return result.modified_count
+
+    @classmethod
+    async def upsert(cls, data: ObjOrDict, filters: ObjOrDict) -> int:
+        if not isinstance(filters, dict):
+            filters = filters.dict(exclude_unset=True, by_alias=True)
+        if isinstance(data, dict):
+            dict_data = data
+        else:
+            dict_data = data.dict(exclude_unset=True, by_alias=True)
         dict_data = {key: val for key, val in dict_data.items() if key not in filters}
         result = await database.database[cls.__collection__].update_one(
-            filters, {"$set": dict_data}, upsert=True,
+            filters, {"$set": dict_data}, upsert=True
         )
         return result.modified_count
 
