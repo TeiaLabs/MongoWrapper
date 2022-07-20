@@ -87,6 +87,7 @@ class BaseMixin(
             if key not in cls.__annotations__:
                 # TODO: get attr name by alias name
                 # assume it is an _id and pop off its underscore
+                # cls.schema(by_alias=True).get("properties").keys()
                 search_key = key[1:]
             else:
                 search_key = key
