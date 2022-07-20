@@ -189,19 +189,13 @@ class BaseMixin(
         return result.deleted_count
 
     @classmethod
-    async def create_nested(
-        cls, parent_id: ObjectId, child_name: str, data: T
+    async def insert_child(
+            cls, parent_id: ObjectId, child_name: str, data: T
     ) -> Optional[ObjectId]:
         result = await database.database[cls.__collection__].update_one(
-            {"_id": parent_id}, {"$addToSet": {child_name: data.dict(by_alias=True)}}
+            {"_id": parent_id},
+            {"$addToSet": {child_name: data.dict(by_alias=True)}}
         )
         if result.modified_count:
             return data.id
         return None
-
-    @classmethod
-    async def create_many(cls, data: List[T]) -> List[ObjectId]:
-        result = await database.database[cls.__collection__].insert_many(
-            [obj.dict(by_alias=True) for obj in data]
-        )
-        return result.inserted_ids
