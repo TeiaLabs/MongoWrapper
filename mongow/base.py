@@ -102,37 +102,47 @@ class BaseMixin(
 
     @classmethod
     async def read(
-        cls,
-        fields: Iterable[str] = tuple(),
-        order: Optional[Tuple[str, bool]] = None,
-        offset: int = 0,
-        limit: int = 100,
-        filters: Optional[Dict[str, Any]] = None,
+            cls,
+            fields: Iterable[str] = tuple(),
+            order: Optional[Tuple[str, bool]] = None,
+            offset: int = 0,
+            limit: int = 100,
+            filters: Optional[Union[T, dict]] = None,
     ) -> List[T]:
         if filters is None:
             filters = {}
+        elif isinstance(filters, cls):
+            filters = filters.dict(exclude_unset=True, by_alias=True)
         else:
             filters = dict(starmap(cls.instantiate_obj, filters.items()))
+
         cursor = database.database[cls.__collection__].find(
             filters, {key: 1 for key in fields}
         )
+
         if order is not None:
             cursor = cursor.sort(order[0], 1 if order[1] else -1)
+
         objs = await cursor.skip(offset).to_list(length=offset + limit)
         return objs
 
     @classmethod
-    async def update(
-        cls, filters: Dict[str, Any], data: Union[T, dict], operator: str = "$set"
-    ) -> int:
+    async def aggregate(cls, pipeline) -> Any:
+        return await database.database[cls.__collection__].aggregate(
+            pipeline
+        ).to_list(length=None)
+
+    @classmethod
+    async def update(cls, data: T, filters: Union[T, dict], operator: str = "$set") -> int:
+        if not isinstance(filters, dict):
+            filters = filters.dict(exclude_unset=True, by_alias=True)
         filters = dict(starmap(cls.instantiate_obj, filters.items()))
-        if isinstance(data, dict):
-            dict_data = data
-        else:
-            dict_data = data.dict(exclude_unset=True, by_alias=True)
-            dict_data = {
-                key: val for key, val in dict_data.items() if key not in filters
-            }
+
+        dict_data = data.dict(exclude_unset=True, by_alias=True)
+        dict_data = {
+            key: val for key, val in dict_data.items() if key not in filters
+        }
+
         result = await database.database[cls.__collection__].update_one(
             filters, {operator: dict_data}
         )
@@ -171,7 +181,10 @@ class BaseMixin(
         return result.modified_count
 
     @classmethod
-    async def delete(cls, filters: Dict[str, Any]) -> int:
+    async def delete(cls, filters: Union[T, dict]) -> int:
+        if not isinstance(filters, dict):
+            filters = filters.dict(exclude_unset=True, by_alias=True)
+
         result = await database.database[cls.__collection__].delete_many(filter=filters)
         return result.deleted_count
 
