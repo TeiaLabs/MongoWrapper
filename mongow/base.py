@@ -1,3 +1,4 @@
+from itertools import starmap
 from typing import (
     Any,
     Dict,
@@ -59,7 +60,7 @@ class BaseMixin(
     CountDocumentsMixin,
     IndexCreationMixin,
     Generic[T],
-    metaclass=AllOptional,
+    # metaclass=AllOptional,
 ):
     __collection__ = "base"
 
@@ -80,6 +81,19 @@ class BaseMixin(
         return result.inserted_id
 
     @classmethod
+    def instantiate_obj(cls, key: str, value: Union[str, Any]) -> tuple[str, Any]:
+        import typing
+        if isinstance(value, str):
+            if key not in cls.__annotations__:
+                # TODO: get attr name by alias name
+                # assume it is an _id and pop off its underscore
+                search_key = key[1:]
+            else:
+                search_key = key
+            return key, typing.get_type_hints(cls)[search_key](value)
+        return key, value
+
+    @classmethod
     async def read(
         cls,
         fields: Iterable[str] = tuple(),
@@ -90,6 +104,12 @@ class BaseMixin(
     ) -> List[T]:
         if filters is None:
             filters = {}
+        else:
+            # d = {}
+            # for k, v in filters.items():
+            #     filters[k] = cls.instantiate_obj(k, v)[1]
+            filters = dict(starmap(cls.instantiate_obj, filters.items()))
+            print(filters)
         cursor = database.database[cls.__collection__].find(
             filters, {key: 1 for key in fields}
         )
