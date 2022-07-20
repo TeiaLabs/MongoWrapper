@@ -1,3 +1,4 @@
+import typing
 from itertools import starmap
 from typing import (
     Any,
@@ -82,16 +83,13 @@ class BaseMixin(
 
     @classmethod
     def instantiate_obj(cls, key: str, value: Union[str, Any]) -> tuple[str, Any]:
-        import typing
         if isinstance(value, str):
-            if key not in cls.__annotations__:
-                # TODO: get attr name by alias name
-                # assume it is an _id and pop off its underscore
-                # cls.schema(by_alias=True).get("properties").keys()
-                search_key = key[1:]
-            else:
-                search_key = key
-            return key, typing.get_type_hints(cls)[search_key](value)
+            if key == "_id":
+                return key, PyObjectId(value)
+            # TODO: get attr name by alias name
+            # assume it is an _id and pop off its underscore
+            # cls.schema(by_alias=True).get("properties").keys()
+            # return key, typing.get_type_hints(cls)[search_key](value)
         return key, value
 
     @classmethod
@@ -106,11 +104,7 @@ class BaseMixin(
         if filters is None:
             filters = {}
         else:
-            # d = {}
-            # for k, v in filters.items():
-            #     filters[k] = cls.instantiate_obj(k, v)[1]
             filters = dict(starmap(cls.instantiate_obj, filters.items()))
-            print(filters)
         cursor = database.database[cls.__collection__].find(
             filters, {key: 1 for key in fields}
         )
