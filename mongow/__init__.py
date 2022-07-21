@@ -1,29 +1,12 @@
-from typing import Optional
-
-from .instance import (
-    database,
-    Database,
-    AsyncIOMotorClient
+from .document import DocumentMixin
+from .mixins import (
+    BatchModelMixin,
+    CountDocumentsMixin,
+    ChildMixin,
+    ModelMixin
 )
-
-from .base import (
-    BaseMixin,
-    PyObjectId,
-    AllOptional
+from .utils import (
+    init_database,
+    PyObjectId
 )
-
-
-def init_database(
-        uri: Optional[str],
-        username: Optional[str] = None,
-        password: Optional[str] = None
-) -> Database:
-    schema = uri.split("/")[-1]
-    schema = schema.split("?")[0]
-    if username is None and password is None:
-        database.client = AsyncIOMotorClient(uri)
-    else:
-        database.client = AsyncIOMotorClient(uri, username=username, password=password)
-
-    database.database = database.client[schema]
-    return database
+from .instance import Database

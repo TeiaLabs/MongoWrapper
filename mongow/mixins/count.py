@@ -1,13 +1,30 @@
-from typing import Any, Optional
+from typing import (
+    Optional,
+    Union
+)
 
-from ..instance import database as client
+from .base import (
+    BaseMixin,
+    T
+)
+from ..instance import database
 
 
-class CountDocumentsMixin():
-    __collection__ = "base"
+class CountDocumentsMixin(BaseMixin):
 
     @classmethod
-    async def count(cls, filters: Optional[dict[str, Any]] = None) -> int:
-        col = client.database[cls.__collection__]
-        c = await col.count_documents(filters if filter else {})
-        return c
+    async def count(
+            cls,
+            filters: Optional[Union[T, dict]] = None
+    ) -> int:
+        if filters is None:
+            filters = {}
+
+        if not isinstance(filters, dict):
+            filters = filters.dict(
+                exclude_unset=True,
+                by_alias=True
+            )
+
+        col = database.database[cls.__collection__]
+        return await col.count_documents(filters)

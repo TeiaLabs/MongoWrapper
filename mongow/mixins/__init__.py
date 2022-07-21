@@ -1,2 +1,5 @@
+from .base import BaseMixin
+from .batch_model import BatchModelMixin
+from .child import ChildMixin
 from .count import CountDocumentsMixin
-from .index import IndexCreationMixin
+from .model import ModelMixin
