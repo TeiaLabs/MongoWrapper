@@ -1,3 +1,4 @@
+from bson import ObjectId
 import pytest
 
 from tests.schemas import Fruit
@@ -12,19 +13,19 @@ async def oid():
 
 class TestRetrieveAndInstantiate:
 
-    async def test_alias_oid(self, oid):
+    async def test_alias_oid(self, oid: ObjectId):
         filters = dict(_id=oid)
         await self.check_response(filters)
 
-    async def test_alias_str(self, oid):
+    async def test_alias_str(self, oid: ObjectId):
         filters = dict(_id=str(oid))
         await self.check_response(filters)
 
-    async def test_name_oid(self, oid):
+    async def test_name_oid(self, oid: ObjectId):
         filters = dict(id=oid)
         await self.check_response(filters)
 
-    async def test_name_str(self, oid):
+    async def test_name_str(self, oid: ObjectId):
         filters = dict(id=str(oid))
         await self.check_response(filters)
 

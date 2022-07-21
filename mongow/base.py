@@ -134,7 +134,7 @@ class BaseMixin(
         dict_data = data.dict(exclude_unset=True, by_alias=True)
         dict_data = {key: val for key, val in dict_data.items() if key not in filters}
         result = await database.database[cls.__collection__].update_one(
-            filters, {"$set": dict_data}, upsert=True, return_document=True
+            filters, {"$set": dict_data}, upsert=True,
         )
         return result.modified_count
 
