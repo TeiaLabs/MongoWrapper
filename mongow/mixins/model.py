@@ -45,6 +45,7 @@ class ModelMixin(BaseMixin):
             offset: int = 0,
             limit: int = 100,
             filters: Optional[Union[T, dict]] = None,
+            construct_object: bool = True
     ) -> List[T]:
         if filters is None:
             filters = {}
@@ -61,13 +62,19 @@ class ModelMixin(BaseMixin):
             cursor = cursor.sort(order[0], 1 if order[1] else -1)
 
         objs = await cursor.skip(offset).to_list(length=offset + limit)
+        if construct_object:
+            return [cls.construct(**obj) for obj in objs]
         return objs
 
     @classmethod
-    async def aggregate(cls, pipeline) -> Any:
-        return await database.database[cls.__collection__].aggregate(
+    async def aggregate(cls, pipeline, construct_object: bool = True) -> Any:
+        objs = await database.database[cls.__collection__].aggregate(
             pipeline
         ).to_list(length=None)
+
+        if construct_object:
+            return [cls.construct(**obj) for obj in objs]
+        return objs
 
     @classmethod
     async def update(
