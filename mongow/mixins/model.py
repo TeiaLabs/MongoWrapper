@@ -45,7 +45,7 @@ class ModelMixin(BaseMixin):
             offset: int = 0,
             limit: int = 100,
             filters: Optional[Union[T, dict]] = None,
-            construct_object: bool = True
+            construct_object: bool = False
     ) -> List[T]:
         if filters is None:
             filters = {}
@@ -67,7 +67,7 @@ class ModelMixin(BaseMixin):
         return objs
 
     @classmethod
-    async def aggregate(cls, pipeline, construct_object: bool = True) -> Any:
+    async def aggregate(cls, pipeline, construct_object: bool = False) -> Any:
         objs = await database.database[cls.__collection__].aggregate(
             pipeline
         ).to_list(length=None)
