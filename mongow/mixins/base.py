@@ -46,13 +46,12 @@ class BaseMixin(
         subclass_dict = cls.Config.__dict__
         for key in self_dict:
             if key not in subclass_dict:
-                match key:
-                    case "arbitrary_types_allowed":
-                        cls.Config.arbitrary_types_allowed = __class__.Config.arbitrary_types_allowed
-                    case "use_enum_values":
-                        cls.Config.use_enum_values = __class__.Config.use_enum_values
-                    case "indices":
-                        cls.Config.indices = __class__.Config.indices
+                if key == "arbitrary_types_allowed":
+                    cls.Config.arbitrary_types_allowed = __class__.Config.arbitrary_types_allowed
+                elif key == "use_enum_values":
+                    cls.Config.use_enum_values = __class__.Config.use_enum_values
+                elif key == "indices":
+                    cls.Config.indices = __class__.Config.indices
 
         fields = cls.__dict__.get("__fields__", {})
         for field_name in fields:
