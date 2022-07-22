@@ -41,7 +41,7 @@ class BaseMixin(
             ObjectId: str
         }
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls):
         self_dict = __class__.Config.__dict__
         subclass_dict = cls.Config.__dict__
         for key in self_dict:
