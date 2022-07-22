@@ -52,6 +52,7 @@ class BaseMixin(
         fields = cls.__dict__.get("__fields__", {})
         for field_name in fields:
             fields[field_name].required = False
+            fields[field_name].allow_none = True
 
         return super().__new__(cls)
 
