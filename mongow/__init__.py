@@ -7,6 +7,8 @@ from .mixins import (
 )
 from .utils import (
     init_database,
+    Direction,
+    Indice,
     PyObjectId
 )
 from .instance import Database

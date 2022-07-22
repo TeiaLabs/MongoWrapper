@@ -1,23 +1,19 @@
-from collections import abc
 from typing import (
     Generic,
-    Iterable,
     TypeVar,
     Union
 )
 
+import pymongo
 from pydantic import (
     BaseModel,
     Field
 )
-from pymongo import (
-    IndexModel,
-    ASCENDING,
-    DESCENDING
-)
 
 from ..instance import database
 from ..utils import (
+    Direction,
+    Indice,
     ObjectId,
     PyObjectId
 )
@@ -64,25 +60,51 @@ class BaseMixin(
         if cls.Config.indices is not None:
             indices = []
             for indice in cls.Config.indices:
-                if isinstance(indice, list):
-                    inner_indices = []
-                    indice_name = ""
-                    for inner_indice in indice:
-                        inner_indices.append((
-                            inner_indice[0],
-                            ASCENDING if inner_indice[1] else DESCENDING
-                        ))
-                        indice_name += inner_indice[0] + "_"
-
-                    indices.append(IndexModel(inner_indices, name=indice_name[:-1]))
-                else:
-                    indices.append(
-                        IndexModel([(
-                            indice[0],
-                            ASCENDING if indice[1] else DESCENDING
-                        )], name=indice[0])
-                    )
+                formatted_indice = BaseMixin.build_indice(indice)
+                pymongo_index = BaseMixin.build_pymongo_index(formatted_indice)
+                indices.append(pymongo_index)
 
             await database.database[cls.__collection__].create_indexes(
                 indexes=indices
             )
+
+    @staticmethod
+    def build_indice(data: Union[Indice, tuple]) -> Indice:
+        if isinstance(data, tuple):
+            data = Indice(
+                keys=[(data[0], data[1])],
+                name=data[2] if len(data) > 2 else None,
+                unique=data[3] if len(data) > 3 else None,
+                background=data[4] if len(data) > 4 else None,
+                sparse=data[5] if len(data) > 5 else None,
+                bucket_size=data[6] if len(data) > 6 else None,
+                min=data[7] if len(data) > 7 else None,
+                max=data[8] if len(data) > 8 else None
+            )
+
+        if not isinstance(data, Indice):
+            raise ValueError(f"Indice type not supported: {type(data)}")
+
+        if data.min is not None or data.max is not None:
+            if data.keys[0][1] != Direction.GEO2D:
+                raise ValueError("Min/max value provided but direction is not GEO2D")
+
+        if data.bucket_size is not None:
+            if data.keys[0][1] != Direction.GEOSPHERE:
+                raise ValueError("Bucket size value provided but direction is not GEOSPHERE")
+
+        return data
+
+    @staticmethod
+    def build_pymongo_index(indice: Indice) -> pymongo.IndexModel:
+        kwargs = {
+            key: val for key, val in indice.__dict__.items()
+            if not key.startswith("__") and val is not None
+        }
+
+        if indice.name is not None:
+            index_name = indice.name
+        else:
+            index_name = "_".join([key[0] for key in indice.keys]) + "_index"
+
+        return pymongo.IndexModel(name=index_name, **kwargs)
