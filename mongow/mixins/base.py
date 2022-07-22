@@ -102,9 +102,7 @@ class BaseMixin(
             if not key.startswith("__") and val is not None
         }
 
-        if indice.name is not None:
-            index_name = indice.name
-        else:
-            index_name = "_".join([key[0] for key in indice.keys]) + "_index"
+        if "name" not in kwargs:
+            kwargs["name"] = "_".join([key[0] for key in indice.keys]) + "_index"
 
-        return pymongo.IndexModel(name=index_name, **kwargs)
+        return pymongo.IndexModel(**kwargs)
