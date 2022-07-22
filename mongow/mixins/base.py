@@ -61,7 +61,7 @@ class BaseMixin(
         if cls.Config.indices is not None:
             indices = []
             for indice in cls.Config.indices:
-                formatted_indice = BaseMixin.build_indice(indice)
+                formatted_indice = BaseMixin.build_indice(cls, indice)
                 pymongo_index = BaseMixin.build_pymongo_index(formatted_indice)
                 indices.append(pymongo_index)
 
@@ -70,7 +70,7 @@ class BaseMixin(
             )
 
     @staticmethod
-    def build_indice(data: Union[Indice, tuple]) -> Indice:
+    def build_indice(cls, data: Union[Indice, tuple]) -> Indice:
         if isinstance(data, tuple):
             data = Indice(
                 keys=[(data[0], data[1])],
@@ -84,15 +84,24 @@ class BaseMixin(
             )
 
         if not isinstance(data, Indice):
-            raise ValueError(f"Indice type not supported: {type(data)}")
+            raise ValueError(
+                f"Indice of type '{type(data)}' provided "
+                f"to class '{cls.__name__}' is not supported"
+            )
 
         if data.min is not None or data.max is not None:
             if data.keys[0][1] != Direction.GEO2D:
-                raise ValueError("Min/max value provided but direction is not GEO2D")
+                raise ValueError(
+                    f"Min/max value provided but direction "
+                    f"is not GEO2D for class '{cls.__name__}'"
+                )
 
         if data.bucket_size is not None:
             if data.keys[0][1] != Direction.GEOSPHERE:
-                raise ValueError("Bucket size value provided but direction is not GEOSPHERE")
+                raise ValueError(
+                    f"Bucket size value provided but direction "
+                    f"is not GEOSPHERE for class '{cls.__name__}"
+                )
 
         return data
 
