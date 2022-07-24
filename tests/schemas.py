@@ -1,10 +1,10 @@
 from typing import Literal
 
-import mongow
 import pydantic
 
+import mongow
 
-class Fruit(mongow.BaseMixin):
+class Fruit(mongow.DocumentMixin):
     density: float = 1.0
     name: str
     needs_peeling: bool = pydantic.Field(

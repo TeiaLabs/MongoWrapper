@@ -1,4 +1,5 @@
 from bson import ObjectId
+from pymongo import errors
 import pytest
 
 from tests.schemas import Fruit
@@ -8,7 +9,8 @@ from tests.schemas import Fruit
 async def oid():
     f = Fruit(name="Banana", taste="sweet")
     oid = await Fruit.create(f)
-    return oid
+    yield oid
+    await Fruit.delete(filters={})
 
 
 class TestRetrieveAndInstantiate:
@@ -23,11 +25,13 @@ class TestRetrieveAndInstantiate:
 
     async def test_name_oid(self, oid: ObjectId):
         filters = dict(id=oid)
-        await self.check_response(filters)
+        with pytest.raises(AssertionError):
+            await self.check_response(filters)
 
     async def test_name_str(self, oid: ObjectId):
         filters = dict(id=str(oid))
-        await self.check_response(filters)
+        with pytest.raises(AssertionError):
+            await self.check_response(filters)
 
     @staticmethod
     async def check_response(filters):

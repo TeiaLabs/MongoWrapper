@@ -5,7 +5,8 @@ from typing import (
     List,
     Optional,
     Tuple,
-    Union
+    Type,
+    Union,
 )
 
 from bson import ObjectId
@@ -20,18 +21,9 @@ from ..instance import database
 class ModelMixin(BaseMixin):
 
     @classmethod
-    def instantiate_obj(cls, key: str, value: Union[str, Any]) -> tuple[str, Any]:
-        if isinstance(value, str):
-            if key == "_id":
-                return key, ObjectId(value)
-            # TODO: get attr name by alias name
-            # assume it is an _id and pop off its underscore
-            # cls.schema(by_alias=True).get("properties").keys()
-            # return key, typing.get_type_hints(cls)[search_key](value)
-        return key, value
-
-    @classmethod
     async def create(cls, data: T) -> ObjectId:
+        if not data.id:
+           data.id = ObjectId() 
         result = await database.database[cls.__collection__].insert_one(
             data.dict(by_alias=True)
         )
@@ -39,19 +31,19 @@ class ModelMixin(BaseMixin):
 
     @classmethod
     async def read(
-            cls,
-            fields: Iterable[str] = tuple(),
-            order: Optional[Tuple[str, bool]] = None,
-            offset: int = 0,
-            limit: int = 100,
-            filters: Optional[Union[T, dict]] = None,
-            construct_object: bool = False
+        cls: Type[T],
+        fields: Iterable[str] = tuple(),
+        order: Optional[Tuple[str, bool]] = None,
+        offset: int = 0,
+        limit: int = 100,
+        filters: Optional[Union[T, dict]] = None,
+        construct_object: bool = False
     ) -> List[T]:
         if filters is None:
             filters = {}
         elif isinstance(filters, cls):
             filters = filters.dict(exclude_unset=True, by_alias=True)
-        else:
+        elif isinstance(filters, dict):
             filters = dict(starmap(cls.instantiate_obj, filters.items()))
 
         cursor = database.database[cls.__collection__].find(
@@ -78,10 +70,10 @@ class ModelMixin(BaseMixin):
 
     @classmethod
     async def update(
-            cls,
-            data: T,
-            filters: Union[T, dict],
-            operator: str = "$set"
+        cls,
+        data: T,
+        filters: Union[T, dict],
+        operator: str = "$set"
     ) -> int:
         if not isinstance(filters, dict):
             filters = filters.dict(
@@ -119,8 +111,7 @@ class ModelMixin(BaseMixin):
         result = await database.database[cls.__collection__].update_one(
             filters,
             {"$set": dict_data},
-            upsert=True,
-            return_document=True
+            upsert=True
         )
         return result.modified_count
 

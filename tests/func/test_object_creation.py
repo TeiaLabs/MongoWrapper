@@ -9,3 +9,4 @@ async def test_create_obj(db):
     oid = await Fruit.create(f)
     assert oid is not None
     assert isinstance(oid, ObjectId)
+    await Fruit.delete(filters={})

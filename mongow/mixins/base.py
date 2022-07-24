@@ -1,10 +1,13 @@
 from typing import (
+    Any,
     Generic,
+    Optional,
     TypeVar,
     Union
 )
 
 import pymongo
+from bson import ObjectId
 from pydantic import (
     BaseModel,
     Field
@@ -14,12 +17,10 @@ from ..instance import database
 from ..utils import (
     Direction,
     Indice,
-    ObjectId,
     PyObjectId
 )
 
 T = TypeVar("T", bound="BaseMixin")
-
 
 class BaseMixin(
     BaseModel,
@@ -37,7 +38,7 @@ class BaseMixin(
             ObjectId: str
         }
 
-    def __new__(cls):
+    def __new__(cls, *_, **__):
         self_dict = __class__.Config.__dict__
         subclass_dict = cls.Config.__dict__
         for key in self_dict:
@@ -73,14 +74,10 @@ class BaseMixin(
     def build_indice(cls, data: Union[Indice, tuple]) -> Indice:
         if isinstance(data, tuple):
             data = Indice(
-                keys=[(data[0], data[1])],
-                name=data[2] if len(data) > 2 else None,
-                unique=data[3] if len(data) > 3 else None,
-                background=data[4] if len(data) > 4 else None,
-                sparse=data[5] if len(data) > 5 else None,
-                bucket_size=data[6] if len(data) > 6 else None,
-                min=data[7] if len(data) > 7 else None,
-                max=data[8] if len(data) > 8 else None
+                keys=[(
+                    data[0], 
+                    data[1] if len(data) > 1 else Direction.ASCENDING
+                )]
             )
 
         if not isinstance(data, Indice):
@@ -116,3 +113,14 @@ class BaseMixin(
             kwargs["name"] = "_".join([key[0] for key in indice.keys]) + "_index"
 
         return pymongo.IndexModel(**kwargs)
+
+    @classmethod
+    def instantiate_obj(cls, key: str, value: Union[str, Any]) -> tuple[str, Any]:
+        if isinstance(value, str):
+            if key == "_id":
+                return key, ObjectId(value)
+            # TODO: get attr name by alias name
+            # assume it is an _id and pop off its underscore
+            # cls.schema(by_alias=True).get("properties").keys()
+            # return key, typing.get_type_hints(cls)[search_key](value)
+        return key, value
