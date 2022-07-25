@@ -23,11 +23,13 @@ class TestRetrieveAndInstantiate:
 
     async def test_name_oid(self, oid: ObjectId):
         filters = dict(id=oid)
-        await self.check_response(filters)
+        with pytest.raises(AssertionError):
+            await self.check_response(filters)
 
     async def test_name_str(self, oid: ObjectId):
         filters = dict(id=str(oid))
-        await self.check_response(filters)
+        with pytest.raises(AssertionError):
+            await self.check_response(filters)
 
     @staticmethod
     async def check_response(filters):
