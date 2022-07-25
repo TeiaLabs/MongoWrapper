@@ -125,6 +125,7 @@ class BaseMixin(
     async def update(
         cls, filters: Dict[str, Any], data: Union[T, dict], operator: str = "$set"
     ) -> int:
+        filters = dict(starmap(cls.instantiate_obj, filters.items()))
         if isinstance(data, dict):
             dict_data = data
         else:
