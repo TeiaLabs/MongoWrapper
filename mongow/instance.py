@@ -14,6 +14,9 @@ class Singleton(type):
 class Database(metaclass=Singleton):
     client: AsyncIOMotorClient = None
     database: AsyncIOMotorDatabase = None
+    uri: str = None
+    user: str = None
+    pwd: str = None
 
 
 database = Database()

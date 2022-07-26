@@ -22,8 +22,12 @@ def init_database(
     schema = schema.split("?")[0]
     if username is None and password is None:
         database.client = AsyncIOMotorClient(uri)
+        database.uri = uri
     else:
         database.client = AsyncIOMotorClient(uri, username=username, password=password)
+        database.uri = uri
+        database.user = username
+        database.pwd = password
 
     database.database = database.client[schema]
     return database
