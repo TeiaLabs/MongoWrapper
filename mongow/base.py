@@ -86,7 +86,7 @@ class BaseMixin(
     def instantiate_obj(cls, key: str, value: Union[str, Any]) -> tuple[str, Any]:
         if isinstance(value, str):
             if key == "_id":
-                return key, PyObjectId(value)
+                return key, cls.__fields__["id"].type_(value)
             # TODO: get attr name by alias name
             # assume it is an _id and pop off its underscore
             # cls.schema(by_alias=True).get("properties").keys()
