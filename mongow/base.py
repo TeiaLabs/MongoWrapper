@@ -1,4 +1,5 @@
-import typing
+import asyncio
+from functools import wraps
 from itertools import starmap
 from typing import (
     Any,
@@ -14,6 +15,7 @@ from typing import (
 
 import pydantic
 from bson.objectid import ObjectId
+from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseConfig, BaseModel, Field
 
 from .instance import database
@@ -21,6 +23,30 @@ from .mixins import CountDocumentsMixin, IndexCreationMixin
 
 T = TypeVar("T", bound="BaseMixin")
 ObjOrDict = Union[T, dict[str, Any]]
+
+
+def lost_event_loop(func):
+    @wraps(func)
+    async def wrap(*args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except RuntimeError as e:
+            if str(e) == "Event loop is closed":
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                if database.user and database.pwd:
+                    database.client = AsyncIOMotorClient(
+                        database.uri, username=username, password=password
+                    )
+                else:
+                    database.client = AsyncIOMotorClient(database.uri)
+
+                database.database = database.client[database.database.name]
+                return await func(*args, **kwargs)
+
+            raise e
+
+    return wrap
 
 
 class PyObjectId(ObjectId):
@@ -76,6 +102,7 @@ class BaseMixin(
         }
 
     @classmethod
+    @lost_event_loop
     async def create(cls, data: T) -> ObjectId:
         result = await database.database[cls.__collection__].insert_one(
             data.dict(by_alias=True)
@@ -94,6 +121,7 @@ class BaseMixin(
         return key, value
 
     @classmethod
+    @lost_event_loop
     async def batch_create(cls, data: List[T]) -> List[ObjectId]:
         result = await database.database[cls.__collection__].insert_many(
             [obj.dict(by_alias=True) for obj in data]
@@ -101,13 +129,14 @@ class BaseMixin(
         return result.inserted_ids
 
     @classmethod
+    @lost_event_loop
     async def read(
-        cls,
-        fields: Iterable[str] = tuple(),
-        order: Optional[Tuple[str, bool]] = None,
-        offset: int = 0,
-        limit: int = 100,
-        filters: Optional[Dict[str, Any]] = None,
+            cls,
+            fields: Iterable[str] = tuple(),
+            order: Optional[Tuple[str, bool]] = None,
+            offset: int = 0,
+            limit: int = 100,
+            filters: Optional[Dict[str, Any]] = None,
     ) -> List[T]:
         if filters is None:
             filters = {}
@@ -122,8 +151,9 @@ class BaseMixin(
         return objs
 
     @classmethod
+    @lost_event_loop
     async def update(
-        cls, filters: Dict[str, Any], data: Union[T, dict], operator: str = "$set"
+            cls, filters: Dict[str, Any], data: Union[T, dict], operator: str = "$set"
     ) -> int:
         filters = dict(starmap(cls.instantiate_obj, filters.items()))
         if isinstance(data, dict):
@@ -139,8 +169,9 @@ class BaseMixin(
         return result.modified_count
 
     @classmethod
+    @lost_event_loop
     async def batch_update(
-        cls, data: ObjOrDict, filters: ObjOrDict, operator: str = "$set",
+            cls, data: ObjOrDict, filters: ObjOrDict, operator: str = "$set",
     ) -> int:
         if not isinstance(filters, dict):
             filters = filters.dict(exclude_unset=True, by_alias=True)
@@ -157,6 +188,7 @@ class BaseMixin(
         return result.modified_count
 
     @classmethod
+    @lost_event_loop
     async def upsert(cls, data: ObjOrDict, filters: ObjOrDict) -> int:
         if not isinstance(filters, dict):
             filters = filters.dict(exclude_unset=True, by_alias=True)
@@ -171,13 +203,15 @@ class BaseMixin(
         return result.modified_count
 
     @classmethod
+    @lost_event_loop
     async def delete(cls, filters: Dict[str, Any]) -> int:
         result = await database.database[cls.__collection__].delete_many(filter=filters)
         return result.deleted_count
 
     @classmethod
+    @lost_event_loop
     async def create_nested(
-        cls, parent_id: ObjectId, child_name: str, data: T
+            cls, parent_id: ObjectId, child_name: str, data: T
     ) -> Optional[ObjectId]:
         result = await database.database[cls.__collection__].update_one(
             {"_id": parent_id}, {"$addToSet": {child_name: data.dict(by_alias=True)}}
@@ -187,6 +221,7 @@ class BaseMixin(
         return None
 
     @classmethod
+    @lost_event_loop
     async def create_many(cls, data: List[T]) -> List[ObjectId]:
         result = await database.database[cls.__collection__].insert_many(
             [obj.dict(by_alias=True) for obj in data]
