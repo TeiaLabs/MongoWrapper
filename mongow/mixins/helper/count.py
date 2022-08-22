@@ -1,21 +1,20 @@
-from typing import (
-    Optional,
-    Union
-)
+from __future__ import annotations
 
-from .base import (
+from typing import Type
+
+from ..base import (
     BaseMixin,
     T
 )
-from ..instance import database
+from ...instance import database
 
 
-class CountDocumentsMixin(BaseMixin):
+class CountMixin(BaseMixin):
 
     @classmethod
     async def count(
-            cls,
-            filters: Optional[Union[T, dict]] = None
+            cls: Type[T],
+            filters: T | dict = None
     ) -> int:
         if filters is None:
             filters = {}

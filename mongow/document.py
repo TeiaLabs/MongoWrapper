@@ -1,15 +1,15 @@
-from .mixins import (
-    BatchModelMixin,
-    CountDocumentsMixin,
-    ChildMixin,
-    ModelMixin
-)
+from .mixins import *
 
 
 class DocumentMixin(
-    BatchModelMixin,
-    CountDocumentsMixin,
-    ChildMixin,
-    ModelMixin
+    AggregateMixin,
+    BatchCreateMixin,
+    BatchUpdateMixin,
+    CountMixin,
+    CreateMixin,
+    DeleteMixin,
+    IndexMixin,
+    UpdateMixin,
+    UpsertMixin
 ):
     pass
