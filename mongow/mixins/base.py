@@ -11,8 +11,8 @@ from pydantic import (
 )
 
 from .utils import (
-    Index,
-    PyObjectId
+    BaseConfig,
+    PyObjectId,
 )
 
 T = TypeVar("T", bound="BaseMixin")
@@ -26,7 +26,4 @@ class BaseMixin(
 
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
 
-    class Config:
-        arbitrary_types_allowed: bool = True
-        use_enum_values: bool = True
-        indices: list[Index] = None
+    Config = BaseConfig

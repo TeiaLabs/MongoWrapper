@@ -8,7 +8,10 @@ from .crud import (
     UpdateMixin,
     UpsertMixin
 )
-from .helper import CountMixin
+from .helper import (
+    CountMixin,
+    PartialMixin
+)
 from .index import IndexMixin
 from .results import (
     CreateResult,

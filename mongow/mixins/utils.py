@@ -41,3 +41,10 @@ class PyObjectId(ObjectId):
     @classmethod
     def __modify_schema__(cls, field_schema):
         field_schema.update(type="string")
+
+
+class BaseConfig:
+    arbitrary_types_allowed: bool = True
+    use_enum_values: bool = True
+    indices: list[Index] = None
+    always_validate: set[str] = None

@@ -9,6 +9,7 @@ class DocumentMixin(
     CreateMixin,
     DeleteMixin,
     IndexMixin,
+    PartialMixin,
     UpdateMixin,
     UpsertMixin
 ):
