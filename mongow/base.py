@@ -147,7 +147,7 @@ class BaseMixin(
         )
         if order is not None:
             cursor = cursor.sort(order[0], 1 if order[1] else -1)
-        objs = await cursor.skip(offset).to_list(length=offset + limit)
+        objs = await cursor.skip(offset).to_list(length=limit)
         return objs
 
     @classmethod
