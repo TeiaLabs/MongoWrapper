@@ -153,7 +153,7 @@ class BaseMixin(
     @classmethod
     @lost_event_loop
     async def update(
-            cls, filters: Dict[str, Any], data: Union[T, dict], operator: str = "$set"
+            cls, filters: Dict[str, Any], data: Union[T, dict], operator: str = "$set", extra_params = None
     ) -> int:
         filters = dict(starmap(cls.instantiate_obj, filters.items()))
         if isinstance(data, dict):
@@ -163,8 +163,12 @@ class BaseMixin(
             dict_data = {
                 key: val for key, val in dict_data.items() if key not in filters
             }
+            
+        if extra_params is None:
+            extra_params = {}
+            
         result = await database.database[cls.__collection__].update_one(
-            filters, {operator: dict_data}
+            filters, {operator: dict_data}, **extra_params
         )
         return result.modified_count
 
