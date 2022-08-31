@@ -13,3 +13,17 @@ class Fruit(mongow.BaseMixin):
     taste: Literal["bitter", "sweet"]
 
     __collection__ = "fruits"
+
+
+class Dog(mongow.BaseMixin):
+    name: str
+    treats: list[str]
+
+    __collection__ = "dogs"
+
+
+class DogOwner(mongow.BaseMixin):
+    name: str
+    dogs: list[Dog]
+
+    __collection__ = "dog_owners"
