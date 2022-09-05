@@ -8,7 +8,7 @@ class CountDocumentsMixin:
 
     @classmethod
     async def count(
-        cls, attribute_path: str, filters: Optional[dict[str, Any]] = None
+            cls, attribute_path: str, filters: Optional[dict[str, Any]] = None
     ) -> Any:
         """
         Count root-level array attributes.
@@ -21,33 +21,33 @@ class CountDocumentsMixin:
             [
                 {"$match": filters if filters else {}},
                 *unwinds,
-                project
+                {"$project": project}
             ]
         )
-        docs = await c.to_list()
+        docs = await c.to_list(None)
         return docs
 
 
-def build_aggregate(model: BaseModel, attribute_path: str, parent: str = "") -> tuple:
+def build_aggregate(model: CountDocumentsMixin, attribute_path: str, parent: str = "") -> tuple:
     splitted_fields = attribute_path.split(".")
     current_field = attribute_path.split(".")[0]
-    unwind = [{
-        "$unwind": f"${parent}{current_field}" if parent else f"${current_field}"
-    }]
-    project = {field: f"${parent}{field}" for field in model.__annotations__.keys()}
+    project = {field: f"${parent}{field}" for field in model.__fields__}
 
     if "." not in attribute_path:
         project[current_field] = {
             "$size": f"${parent}{current_field}"
         }
-        return unwind, project
-    
+        return [], project
+
     sub_type = model.__fields__[current_field].type_
     sub_field = ".".join(splitted_fields[1:])
     sub_parent = parent + current_field if parent else current_field
 
     sub_unwind, sub_project = build_aggregate(sub_type, sub_field, sub_parent + ".")
 
+    unwind = [{
+        "$unwind": f"${parent}{current_field}" if parent else f"${current_field}"
+    }]
     unwind.extend(sub_unwind)
     project[current_field] = sub_project
 
