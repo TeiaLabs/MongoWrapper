@@ -19,7 +19,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseConfig, BaseModel, Field
 
 from .instance import database
-from .mixins import CountDocumentsMixin, IndexCreationMixin
+from .mixins import CountDocumentsMixin, IndexCreationMixin, UpdateMixin
 
 T = TypeVar("T", bound="BaseMixin")
 ObjOrDict = Union[T, dict[str, Any]]
@@ -87,6 +87,7 @@ class BaseMixin(
     BaseModel,
     CountDocumentsMixin,
     IndexCreationMixin,
+    UpdateMixin,
     Generic[T],
     # metaclass=AllOptional,
 ):

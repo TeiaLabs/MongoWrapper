@@ -1,3 +1,5 @@
+import random
+
 import pytest
 from bson import ObjectId
 
@@ -28,3 +30,9 @@ class TestUpdateMany:
             filters = {"_id": oid}
             upserted_count = await Fruit.upsert(data=data, filters=filters)
             assert upserted_count == 1
+
+    async def test_bulk_update_one(self, oids):
+        documents = [dict(density=random.randint(100, 1000)) for _ in range(len(oids))]
+        filters = [{"_id": oid} for oid in oids]
+        result = await Fruit.bulk_update_one(filters=filters, documents=documents)
+        assert result.modified_count == len(oids)
