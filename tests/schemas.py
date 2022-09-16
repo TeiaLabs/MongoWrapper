@@ -1,3 +1,4 @@
+import random
 from typing import Literal
 
 import mongow
@@ -17,6 +18,7 @@ class Fruit(mongow.BaseMixin):
 
 class Dog(mongow.BaseMixin):
     name: str
+    age: int = random.randint(0, 20)
     treats: list[str]
 
     __collection__ = "dogs"
@@ -24,6 +26,17 @@ class Dog(mongow.BaseMixin):
 
 class DogOwner(mongow.BaseMixin):
     name: str
+    age: int = random.randint(0, 100)
     dogs: list[Dog]
 
     __collection__ = "dog_owners"
+
+
+class NGO(mongow.BaseMixin):
+    name: str
+    funding: int = random.randint(0, 1000000)
+    dog_owners: list[DogOwner]
+
+    __collection__ = "ngos"
+
+
