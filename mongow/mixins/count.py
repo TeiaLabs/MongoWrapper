@@ -4,16 +4,20 @@ from ..instance import database as client
 
 
 class CountDocumentsMixin:
-    __collection__ = "base"
+    __collection__: str
+    @classmethod
+    async def count(cls, filters: Optional[dict[str, Any]] = None) -> int:
+        """Count documents filtered by root-level attrs."""
+        col = client.database[cls.__collection__]
+        c = await col.count_documents(filters if filters else {})
+        return c
 
     @classmethod
-    async def count(
-            cls, attribute_path: str, filters: Optional[dict[str, Any]] = None
+    async def count_nested(
+        cls, attribute_path: str, filters: Optional[dict[str, Any]] = None
     ) -> Any:
         """
-        Count root-level array attributes.
-        
-        TODO: count arbitrarily nested arrays.
+        Count size of arbitrarily nested lists.
         """
         col = client.database[cls.__collection__]
         unwinds, project = build_aggregate(cls, attribute_path)

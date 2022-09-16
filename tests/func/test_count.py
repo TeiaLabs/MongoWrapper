@@ -1,9 +1,9 @@
-import random
+import pytest
 
 from tests.schemas import DogOwner, Dog
 
 
-async def test_count():
+class TestCounting:
     treats = [
         "Ziwi",
         "Stewart Pro",
@@ -15,25 +15,44 @@ async def test_count():
         "ElleVet",
         "Greenies"
     ]
-    for i in range(10):
-        dogs = []
-        for j in range(random.randint(1, 5)):
-            dogs.append(Dog(
-                name=f"Dog {i + j}",
-                treats=random.sample(treats, k=random.randint(0, len(treats)))
-            ))
 
-            await Dog.create(dogs[-1])
+    @pytest.fixture(autouse=True)
+    async def create_entities(self):
+        dog_owners = []
+        for i in range(10):
+            dogs = [
+                Dog(
+                    name=f"Dog {i} {j}",
+                    treats=self.treats[:j]
+                )
+                for j in range(i)
+            ]
+            dog_owners.append(
+                DogOwner(
+                    name=f"Owner {i}",
+                    dogs=dogs,
+                ) 
+            )
+        oids = await DogOwner.create_many(dog_owners)
+        yield
+        await DogOwner.delete({"_id": {"$in": oids}})
 
-        await DogOwner.create(DogOwner(
-            name=f"Owner {i}",
-            dogs=dogs,
-        ))
+    async def test_count_nested_1_level(self):
+        output = await DogOwner.count_nested("dogs")
+        for doc in output:
+            assert doc["dogs"] == int(doc["name"][-1])
 
-    out = (await DogOwner.count("dogs.treats"))[0]
-    assert not set(out.keys()).difference({"_id", "name", "dogs"})
-
-    dogs = out["dogs"]
-    assert not set(dogs.keys()).difference({"_id", "name", "treats"})
-
-    assert isinstance(dogs["treats"], int)
+    async def test_count_nested_2_levels(self):
+        output = await DogOwner.count_nested("dogs.treats")
+        # out = output[0]
+        # assert not set(out.keys()).difference({"_id", "name", "dogs"})
+        # dogs = out["dogs"]
+        # assert not set(dogs.keys()).difference({"_id", "name", "treats"})
+        # assert isinstance(dogs["treats"], int)
+        for doc in output:
+            for sub_doc in doc["dogs"]:
+                assert sub_doc["treats"] == sub_doc["name"].split(" ")[-1]
+    
+    async def test_count(self):
+        output = await DogOwner.count()
+        assert output == 10
