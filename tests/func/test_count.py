@@ -18,6 +18,8 @@ class TestCounting:
 
     @pytest.fixture(autouse=True)
     async def create_entities(self):
+        await DogOwner.delete({})
+
         dog_owners = []
         for i in range(10):
             dogs = [
@@ -31,11 +33,9 @@ class TestCounting:
                 DogOwner(
                     name=f"Owner {i}",
                     dogs=dogs,
-                ) 
+                )
             )
-        oids = await DogOwner.create_many(dog_owners)
-        yield
-        await DogOwner.delete({"_id": {"$in": oids}})
+        await DogOwner.create_many(dog_owners)
 
     async def test_count_nested_1_level(self):
         output = await DogOwner.count_nested("dogs")
@@ -44,15 +44,10 @@ class TestCounting:
 
     async def test_count_nested_2_levels(self):
         output = await DogOwner.count_nested("dogs.treats")
-        # out = output[0]
-        # assert not set(out.keys()).difference({"_id", "name", "dogs"})
-        # dogs = out["dogs"]
-        # assert not set(dogs.keys()).difference({"_id", "name", "treats"})
-        # assert isinstance(dogs["treats"], int)
         for doc in output:
-            for sub_doc in doc["dogs"]:
-                assert sub_doc["treats"] == sub_doc["name"].split(" ")[-1]
-    
+            sub_doc = doc["dogs"]
+            assert sub_doc["treats"] == int(sub_doc["name"].split(" ")[-1])
+
     async def test_count(self):
         output = await DogOwner.count()
         assert output == 10
