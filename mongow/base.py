@@ -1,3 +1,4 @@
+from typing import Any
 import asyncio
 from functools import wraps
 from itertools import starmap
@@ -36,7 +37,7 @@ def lost_event_loop(func):
                 asyncio.set_event_loop(loop)
                 if database.user and database.pwd:
                     database.client = AsyncIOMotorClient(
-                        database.uri, username=username, password=password
+                        database.uri, username=database.user, password=database.pwd
                     )
                 else:
                     database.client = AsyncIOMotorClient(database.uri)
@@ -101,6 +102,12 @@ class BaseMixin(
         fields = {
             "id": {"alias": "_id", "default_factory": PyObjectId}
         }
+
+    @classmethod
+    @lost_event_loop
+    async def distinct(cls, column: str) -> list[Any]:
+        result = await database.database[cls.__collection__].distinct(key=column)
+        return result
 
     @classmethod
     @lost_event_loop
